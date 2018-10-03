@@ -2,6 +2,7 @@ import tensorflow as tf
 from data import base
 import glob
 import os
+from data.preprocess import random_crop
 
 
 class SegDataset(base.InputPiepline):
@@ -44,12 +45,12 @@ class SegDataset(base.InputPiepline):
         height, width = self.image_reader.read_image_dims(image_data)
 
         feature_dict = {
-            'image/encoded': base.bytes_list_feature(image_data),
-            'image/format': base.bytes_list_feature(self.image_format),
-            'image/height': base.int64_list_feature(height),
-            'image/width': base.int64_list_feature(width),
-            'mask/encoded': base.bytes_list_feature(mask_data),
-            'mask/format': base.bytes_list_feature(self.mask_format),
+            'image/encoded': base.bytes_feature(image_data),
+            'image/format': base.bytes_feature(self.image_format.encode()),
+            'image/height': base.int64_feature(height),
+            'image/width': base.int64_feature(width),
+            'mask/encoded': base.bytes_feature(mask_data),
+            'mask/format': base.bytes_feature(self.mask_format.encode()),
         }
         example = tf.train.Example(features=tf.train.Features(feature=feature_dict))
         return example
@@ -73,7 +74,17 @@ class SegDataset(base.InputPiepline):
         return parsed_features
 
     def preprocess_for_train(self, inputs):
-        return inputs
+        encoded_im = inputs['image/encoded']
+
+        encoded_mask = inputs['mask/encoded']
+        im = tf.image.decode_image(encoded_im, channels=3)
+        mask = tf.image.decode_image(encoded_mask, channels=1)
+        im = tf.reshape(im, [1024, 1024, 3])
+        mask = tf.reshape(mask, [1024, 1024, 1])
+        im, mask = random_crop(im, mask, crop_size=(256, 256))
+        im = tf.cast(im, tf.float32)
+        mask = tf.cast(mask, tf.int64)
+        return im, mask
 
     def preprocess_for_test(self, inputs):
         return inputs

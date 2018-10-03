@@ -2,6 +2,7 @@ from abc import abstractmethod
 import tensorflow as tf
 import logging
 from tensorflow.contrib.data import shuffle_and_repeat, map_and_batch, AUTOTUNE
+import os
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -29,17 +30,23 @@ class InputPiepline():
                      epochs=-1,
                      num_parallel_calls=4,
                      training=False):
-        dataset = tf.data.TFRecordDataset(self.record_path)
-        dataset = dataset.prefetch(batch_size)
-        dataset = dataset.map(self.decode_feature, num_parallel_calls=num_parallel_calls)
-        if training:
-            dataset = dataset.apply(map_and_batch(self.preprocess_for_train, batch_size=batch_size,
-                                                  num_parallel_calls=num_parallel_calls))
-            dataset = dataset.apply(shuffle_and_repeat(AUTOTUNE, epochs))
-        else:
-            dataset = dataset.apply(map_and_batch(self.preprocess_for_test, batch_size=batch_size,
-                                                  num_parallel_calls=num_parallel_calls))
-        return dataset
+        if not os.path.exists(self.record_path) or self.rebuild_record:
+            self.build_record()
+
+        def _input_fn():
+            dataset = tf.data.TFRecordDataset(self.record_path)
+            dataset = dataset.prefetch(batch_size)
+            dataset = dataset.map(self.decode_feature, num_parallel_calls=num_parallel_calls)
+            if training:
+                dataset = dataset.apply(map_and_batch(self.preprocess_for_train, batch_size=batch_size,
+                                                      num_parallel_calls=num_parallel_calls))
+                dataset = dataset.apply(shuffle_and_repeat(batch_size, epochs))
+            else:
+                dataset = dataset.apply(map_and_batch(self.preprocess_for_test, batch_size=batch_size,
+                                                      num_parallel_calls=num_parallel_calls))
+            return dataset
+
+        return _input_fn
 
     @abstractmethod
     def preprocess_for_train(self, inputs):
