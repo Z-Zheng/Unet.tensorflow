@@ -162,13 +162,3 @@ class Unet(tf.keras.Model):
 
         }
         return config
-
-
-if __name__ == '__main__':
-    im = tf.ones([1, 256, 256, 3])
-    m = Unet(2)
-    c = m(im)
-    a = m.trainable_variables
-    b = tf.trainable_variables()
-
-    print()

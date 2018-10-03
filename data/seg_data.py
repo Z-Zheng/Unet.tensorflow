@@ -2,7 +2,7 @@ import tensorflow as tf
 from data import base
 import glob
 import os
-from data.preprocess import random_crop
+from data.preprocess import random_crop, random_flip_left_right
 
 
 class SegDataset(base.InputPiepline):
@@ -82,6 +82,7 @@ class SegDataset(base.InputPiepline):
         im = tf.reshape(im, [1024, 1024, 3])
         mask = tf.reshape(mask, [1024, 1024, 1])
         im, mask = random_crop(im, mask, crop_size=(256, 256))
+        im, mask = random_flip_left_right(im, mask)
         im = tf.cast(im, tf.float32)
         mask = tf.cast(mask, tf.int64)
         return im, mask
