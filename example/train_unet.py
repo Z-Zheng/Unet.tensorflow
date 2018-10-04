@@ -16,13 +16,14 @@ def main():
     num_gpus = 0
     num_classes = 2
     num_steps = 20000
+    batch_size = 2
 
     hyper_params = {
         'learning_rate_fn': learning_rate_util.cosine_learning_rate(0.1, num_steps, 0.000001),
         'momentum': 0.9,
         'freeze_prefixes': []
     }
-
+    # 1. define loss and metric
     def loss_fn(predictions, labels):
         pred_logit = predictions['logit']
         labels = tf.reshape(labels, [-1])
@@ -42,14 +43,23 @@ def main():
         return {
             'miou': miou
         }
+    # 2. prepare data
+    train_dataset = seg_data.SegDataset(image_dir=image_dir,
+                                        mask_dir=mask_dir,
+                                        record_path=record_path,
+                                        crop_size_for_train=(512, 512),
+                                        rebuild_record=False)
 
-    dataset = seg_data.SegDataset(image_dir=image_dir,
-                                  mask_dir=mask_dir,
-                                  record_path=record_path,
-                                  rebuild_record=False)
+    test_dataset = seg_data.SegDataset(image_dir=image_dir,
+                                       mask_dir=mask_dir,
+                                       record_path=record_path,
+                                       crop_size_for_train=None,
+                                       rebuild_record=False)
 
-    train_input_fn = dataset.get_input_fn(batch_size=1, epochs=-1, training=True)
-    eval_input_fn = dataset.get_input_fn(batch_size=1, epochs=1, training=False)
+    train_input_fn = train_dataset.get_input_fn(batch_size=batch_size, epochs=-1, training=True)
+    eval_input_fn = test_dataset.get_input_fn(batch_size=1, epochs=1, training=False)
+
+    # 3. prepare model
     model = Unet(num_classes=num_classes, use_softmax=True)
 
     estimator = estimator_util.build_estimator(model,
@@ -67,6 +77,7 @@ def main():
     train_spec = tf.estimator.TrainSpec(train_input_fn, max_steps=num_steps, hooks=[log_hook])
     eval_spec = tf.estimator.EvalSpec(eval_input_fn, steps=2000)
 
+    # 4. go on the fly
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
 
 

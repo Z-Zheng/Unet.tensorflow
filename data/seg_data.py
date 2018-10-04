@@ -12,6 +12,7 @@ class SegDataset(base.InputPiepline):
                  record_path,
                  image_format='jpg',
                  mask_format='png',
+                 crop_size_for_train=(256, 256),
                  rebuild_record=False
                  ):
         super(SegDataset, self).__init__(record_path, rebuild_record)
@@ -21,6 +22,7 @@ class SegDataset(base.InputPiepline):
         self.image_format = image_format
         self.mask_format = mask_format
 
+        self.crop_size_for_train = crop_size_for_train
         self.image_reader = base.ImageReader(image_format=self.image_format, channels=3)
         self.mask_reader = base.ImageReader(image_format=self.mask_format, channels=1)
 
@@ -75,17 +77,36 @@ class SegDataset(base.InputPiepline):
 
     def preprocess_for_train(self, inputs):
         encoded_im = inputs['image/encoded']
-
         encoded_mask = inputs['mask/encoded']
+        # decode
         im = tf.image.decode_image(encoded_im, channels=3)
         mask = tf.image.decode_image(encoded_mask, channels=1)
-        im = tf.reshape(im, [1024, 1024, 3])
-        mask = tf.reshape(mask, [1024, 1024, 1])
-        im, mask = random_crop(im, mask, crop_size=(256, 256))
+        # set shape
+        height = inputs['image/height']
+        width = inputs['image/width']
+        im = tf.reshape(im, [height, width, 3])
+        mask = tf.reshape(mask, [height, width, 1])
+        # data augmentation
+        im, mask = random_crop(im, mask, crop_size=self.crop_size_for_train)
         im, mask = random_flip_left_right(im, mask)
+
         im = tf.cast(im, tf.float32)
         mask = tf.cast(mask, tf.int64)
         return im, mask
 
     def preprocess_for_test(self, inputs):
-        return inputs
+        encoded_im = inputs['image/encoded']
+        encoded_mask = inputs['mask/encoded']
+        # decode to uint8 tensor
+        im = tf.image.decode_image(encoded_im, channels=3)
+        mask = tf.image.decode_image(encoded_mask, channels=1)
+        # set shape
+        height = inputs['image/height']
+        width = inputs['image/width']
+        im = tf.reshape(im, [height, width, 3])
+        mask = tf.reshape(mask, [height, width, 1])
+
+        im = tf.cast(im, tf.float32)
+        mask = tf.cast(mask, tf.int64)
+
+        return im, mask

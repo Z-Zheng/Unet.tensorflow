@@ -12,7 +12,11 @@ def random_crop(image, mask, crop_size):
 
     """
     original_shape = tf.shape(image)
-    mask_shape = tf.shape(mask)
+    im_static_shape = image.shape.as_list()
+    im_channel = im_static_shape[-1]
+
+    mask_static_shape = mask.shape.as_list()
+    mask_channel = mask_static_shape[-1]
 
     blob = tf.concat([image, mask], axis=-1)
 
@@ -22,8 +26,8 @@ def random_crop(image, mask, crop_size):
     offset_width = tf.random_uniform([], maxval=max_offset_width, dtype=tf.int32)
 
     cropped = tf.image.crop_to_bounding_box(blob, offset_height, offset_width, crop_size[0], crop_size[1])
-    cropped_im = tf.slice(cropped, [0, 0, 0], [-1, -1, original_shape[-1]])
-    cropped_mask = tf.slice(cropped, [0, 0, original_shape[-1]], [-1, -1, mask_shape[-1]])
+    cropped_im = tf.slice(cropped, [0, 0, 0], [-1, -1, im_channel])
+    cropped_mask = tf.slice(cropped, [0, 0, im_channel], [-1, -1, mask_channel])
 
     return cropped_im, cropped_mask
 
@@ -74,6 +78,5 @@ def flip_up_down(image, mask=None):
         new_mask = mask[::-1, :, :]
         ret.append(new_mask)
     return tuple(ret)
-
 
 # todo: random scale
