@@ -94,7 +94,7 @@ class SegDataset(base.InputPiepline):
         im, mask = random_flip_left_right(im, mask)
 
         im = tf.cast(im, tf.float32)
-        np.array()
+        im = im - tf.constant(MEAN, dtype=tf.float32, shape=[1, 1, 3])
         mask = tf.cast(mask, tf.int64)
         return im, mask
 
