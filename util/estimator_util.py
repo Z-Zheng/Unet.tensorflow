@@ -14,8 +14,9 @@ def build_estimator(model,
     strategy = distribute.MirroredStrategy(num_gpus=num_gpus)
     session_config = tf.ConfigProto(allow_soft_placement=True)
     session_config.gpu_options.allow_growth = True
+    print(session_config)
     config = tf.estimator.RunConfig(train_distribute=strategy,
-                                    log_step_count_steps=1,
+                                    log_step_count_steps=10,
                                     keep_checkpoint_max=20,
                                     session_config=session_config)
 

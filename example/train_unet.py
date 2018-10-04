@@ -13,10 +13,10 @@ def main():
     record_path = '/media/zhengzhuo/0BE616A90BE616A9/Unet.tensorflow/test_images/train.record'
     model_dir = './tmp'
 
-    num_gpus = 0
+    num_gpus = 1
     num_classes = 2
     num_steps = 20000
-    batch_size = 2
+    batch_size = 4
 
     hyper_params = {
         'learning_rate_fn': learning_rate_util.cosine_learning_rate(0.1, num_steps, 0.000001),
