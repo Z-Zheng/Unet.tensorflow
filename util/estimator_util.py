@@ -13,8 +13,7 @@ def build_estimator(create_model_func,
                     metric_fn=None
                     ):
     # issue #22550
-    devices = get_devices(num_gpus)
-    strategy = distribute.MirroredStrategy(devices=devices)
+    strategy = distribute.MirroredStrategy(num_gpus=num_gpus)
     session_config = tf.ConfigProto(allow_soft_placement=True)
     session_config.gpu_options.allow_growth = True
 
@@ -30,15 +29,6 @@ def build_estimator(create_model_func,
         config=config
     )
     return estimator
-
-
-def get_devices(num_gpus):
-    if num_gpus == 0:
-        devices = ["/device:CPU:0"]
-    else:
-        devices = ["/device:GPU:%d" % d for d in range(num_gpus)] + ["/device:CPU:0"]
-
-    return devices
 
 
 def build_model_fn(create_model_fn, hpyerparams, loss_fn, metric_fn=None):
