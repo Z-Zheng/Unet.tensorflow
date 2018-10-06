@@ -2,25 +2,28 @@ import tensorflow as tf
 from tensorflow.contrib import distribute
 from module import loss
 from util import learning_rate_util
+from functools import partial
 
 
-def build_estimator(model,
+def build_estimator(create_model_func,
                     model_dir,
                     num_gpus,
                     hpyerparams,
                     loss_fn,
                     metric_fn=None
                     ):
-    strategy = distribute.MirroredStrategy(num_gpus=num_gpus)
+    # issue #22550
+    devices = get_devices(num_gpus)
+    strategy = distribute.MirroredStrategy(devices=devices)
     session_config = tf.ConfigProto(allow_soft_placement=True)
     session_config.gpu_options.allow_growth = True
-    print(session_config)
+
     config = tf.estimator.RunConfig(train_distribute=strategy,
                                     log_step_count_steps=10,
                                     keep_checkpoint_max=20,
                                     session_config=session_config)
 
-    model_fn = build_model_fn(model, hpyerparams, loss_fn=loss_fn, metric_fn=metric_fn)
+    model_fn = build_model_fn(create_model_func, hpyerparams, loss_fn=loss_fn, metric_fn=metric_fn)
     estimator = tf.estimator.Estimator(
         model_fn,
         model_dir=model_dir,
@@ -29,8 +32,18 @@ def build_estimator(model,
     return estimator
 
 
-def build_model_fn(model, hpyerparams, loss_fn, metric_fn=None):
+def get_devices(num_gpus):
+    if num_gpus == 0:
+        devices = ["/device:CPU:0"]
+    else:
+        devices = ["/device:GPU:%d" % d for d in range(num_gpus)] + ["/device:CPU:0"]
+
+    return devices
+
+
+def build_model_fn(create_model_fn, hpyerparams, loss_fn, metric_fn=None):
     def _model_fn(features, labels, mode, params=None):
+        model = create_model_fn()
         prediction = model(features)
 
         if mode == tf.estimator.ModeKeys.PREDICT:
@@ -38,9 +51,10 @@ def build_model_fn(model, hpyerparams, loss_fn, metric_fn=None):
                 mode,
                 predictions=prediction,
             )
-
         main_losses = loss_fn(predictions=prediction, labels=labels)
-
+        metric_ops = metric_fn(predictions=prediction, labels=labels, params={
+            'inputs': features
+        })
         if mode == tf.estimator.ModeKeys.TRAIN:
             # get hyper-parameters
             hps = HyperParams(hpyerparams)
@@ -74,9 +88,9 @@ def build_model_fn(model, hpyerparams, loss_fn, metric_fn=None):
                 train_op=train_op
             )
         if mode == tf.estimator.ModeKeys.EVAL:
+
             if metric_fn is None:
                 raise ValueError('The mode is EVAL, but the metric_fn is None.')
-            metric_ops = metric_fn(predictions=prediction, labels=labels)
 
             return tf.estimator.EstimatorSpec(
                 mode,
