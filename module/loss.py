@@ -66,6 +66,8 @@ def dice_loss(predictions, labels):
         Returns:
 
         """
+    tf.assert_rank(predictions, rank=1)
+    tf.assert_rank(labels, rank=1)
     return -1. * _dice_coeff(predictions, labels)
 
 
