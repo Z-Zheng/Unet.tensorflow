@@ -44,7 +44,10 @@ def main():
         pred_logit = predictions['logit']
         labels = tf.reshape(labels, [-1])
         flat_logit = tf.reshape(pred_logit, [-1, num_classes])
-        onehot_labels = tf.one_hot(labels, num_classes)
+        if num_classes > 1:
+            onehot_labels = tf.one_hot(labels, num_classes)
+        else:
+            onehot_labels = tf.reshape(labels, [-1, 1])
 
         bpn_weights = balance_positive_negative_weight(labels, positive_weight=22. / 23.,
                                                        negative_weight=1. / 23.)
