@@ -78,7 +78,7 @@ def main():
         MEAN = [[[[122.7717, 115.9465, 102.9801]]]]
         images += MEAN
         pred_prob = predictions['prob']
-        pred_prob = tf.reshape(pred_prob, [-1])
+        flat_pred_prob = tf.reshape(pred_prob, [-1])
         pred_class = tf.to_float(pred_prob > score_threshold)
 
         # add summary for prediction results.
@@ -92,7 +92,7 @@ def main():
         miou = tf.metrics.mean_iou(labels, pred_class, num_classes=2)
         p_iou = positive_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
         with tf.device("/device:CPU:0"):
-            pr_curve('eval/prc', tf.cast(labels, tf.bool), pred_prob, num_thresholds=201)
+            pr_curve('eval/prc', tf.cast(labels, tf.bool), flat_pred_prob, num_thresholds=201)
         return {
             'eval/miou': miou,
             'eval/piou': p_iou
