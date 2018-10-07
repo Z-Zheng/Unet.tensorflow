@@ -28,7 +28,7 @@ def main():
     num_classes = 1
     num_steps = 20000
     eval_per_steps = 1000
-    score_threshold = 0.7
+    score_threshold = 0.9
     # batch size should be larger than 16 if you use batch normalization
     batch_size = 16
     use_batch_norm = False
@@ -46,13 +46,13 @@ def main():
         flat_logit = tf.reshape(pred_logit, [-1, num_classes])
         onehot_labels = tf.one_hot(labels, num_classes)
 
-        bpn_weights = balance_positive_negative_weight(labels, positive_weight=1. / 23.,
-                                                       negative_weight=22. / 23.)
+        bpn_weights = balance_positive_negative_weight(labels, positive_weight=1.,
+                                                       negative_weight=1.)
 
         # ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
         ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
         pred_scores = tf.sigmoid(tf.reshape(flat_logit, [-1]))
-        pred_class = tf.to_float(pred_scores > score_threshold)
+        pred_class = tf.to_float(tf.greater_equal(pred_scores, score_threshold))
         dice_loss_v = dice_loss(pred_class, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
         tf.summary.scalar('loss/dice_loss', dice_loss_v)
@@ -79,7 +79,7 @@ def main():
         images += MEAN
         pred_prob = predictions['prob']
         flat_pred_prob = tf.reshape(pred_prob, [-1])
-        pred_class = tf.to_float(pred_prob > score_threshold)
+        pred_class = tf.to_float(tf.greater_equal(pred_prob, score_threshold))
 
         # add summary for prediction results.
         pred_images = pred_class * 255

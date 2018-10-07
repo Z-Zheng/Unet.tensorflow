@@ -35,7 +35,7 @@ class InputPiepline():
 
         def _input_fn():
             dataset = tf.data.TFRecordDataset(self.record_path)
-            dataset = dataset.prefetch(batch_size)
+            dataset = dataset.prefetch(batch_size * 4)
             dataset = dataset.map(self.decode_feature, num_parallel_calls=num_parallel_calls)
             if training:
                 dataset = dataset.apply(map_and_batch(self.preprocess_for_train, batch_size=batch_size,
@@ -44,6 +44,7 @@ class InputPiepline():
             else:
                 dataset = dataset.apply(map_and_batch(self.preprocess_for_test, batch_size=batch_size,
                                                       num_parallel_calls=num_parallel_calls))
+            dataset = dataset.prefetch(AUTOTUNE)
             return dataset
 
         return _input_fn

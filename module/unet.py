@@ -63,7 +63,7 @@ class NaiveEncoder(tf.keras.Model):
         self.block5.add(ReLU())
 
     def call(self, inputs, training=None, mask=None):
-        with tf.variable_scope('NaiveEncoder',values=[inputs]):
+        with tf.variable_scope('NaiveEncoder', values=[inputs]):
             x = inputs
 
             c1 = x = self.block1(x)
@@ -138,7 +138,7 @@ class NaiveDecoder(tf.keras.Model):
         self.cls_conv_pred = Conv2DSame(num_classes, 1)
 
     def call(self, inputs, training=None, mask=None):
-        with tf.variable_scope('NaiveDecoder',values=[inputs]):
+        with tf.variable_scope('NaiveDecoder', values=[inputs]):
             c1, c2, c3, c4, c5 = inputs
 
             p5 = self.upsample2d(c5)
