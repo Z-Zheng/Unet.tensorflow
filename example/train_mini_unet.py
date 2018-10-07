@@ -68,7 +68,8 @@ def main():
         tf.identity(p_iou_v, 'train_piou')
         tf.summary.scalar('train/piou', p_iou_v)
         # add pr curve
-        pr_curve('train/prc', tf.cast(labels, tf.bool), pred_scores, num_thresholds=201)
+        with tf.device("/device:CPU:0"):
+            pr_curve('train/prc', tf.cast(labels, tf.bool), pred_scores, num_thresholds=201)
 
         return ce_loss + dice_loss_v
 
@@ -88,9 +89,12 @@ def main():
         labels = tf.reshape(labels, [-1])
         pred_class = tf.reshape(pred_class, [-1])
         miou = tf.metrics.mean_iou(labels, pred_class, num_classes=2)
-        pr_curve('eval/prc', tf.cast(labels, tf.bool), pred_prob, num_thresholds=201)
+        p_iou = positive_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
+        with tf.device("/device:CPU:0"):
+            pr_curve('eval/prc', tf.cast(labels, tf.bool), pred_prob, num_thresholds=201)
         return {
-            'eval/miou': miou
+            'eval/miou': miou,
+            'eval/piou': p_iou
         }
 
     def create_model():
