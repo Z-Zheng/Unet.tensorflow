@@ -66,6 +66,7 @@ class NaiveEncoder(tf.keras.Model):
         x = inputs
 
         c1 = x = self.block1(x)
+
         x = self.maxpool2d(x)
 
         c2 = x = self.block2(x)
