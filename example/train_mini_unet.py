@@ -24,7 +24,7 @@ def main():
     test_record_path = '/home/zf/zz/DATA/mass_roads/test.record'
     model_dir = './log/miniunet/'
 
-    num_gpus = 4
+    num_gpus = 0
     num_classes = 1
     num_steps = 20000
     eval_per_steps = 1000

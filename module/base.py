@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.python.keras.utils import conv_utils
+import math
 
 
 class Conv2DSame(tf.keras.layers.Conv2D):
@@ -60,66 +61,26 @@ class Conv2DSame(tf.keras.layers.Conv2D):
         df = conv_utils.normalize_data_format(self.data_format)
         shape = tf.TensorShape(input_shape).as_list()
 
+        kernel_size_effective = self.k_size + (self.k_size - 1) * (self.rate - 1)
+        pad_total = kernel_size_effective - 1
+
         if df == 'channels_first':
             shape[1] = self.out_channels
+
+            shape[2] = math.floor((shape[2] + pad_total - self.rate * (self.k_size - 1) - 1) / self.stride + 1) if \
+                shape[2] is not None else None
+
+            shape[3] = math.floor((shape[3] + pad_total - self.rate * (self.k_size - 1) - 1) / self.stride + 1) if \
+                shape[3] is not None else None
         else:
             shape[-1] = self.out_channels
 
+            shape[1] = math.floor((shape[1] + pad_total - self.rate * (self.k_size - 1) - 1) / self.stride + 1) if \
+                shape[1] is not None else None
+            shape[2] = math.floor((shape[2] + pad_total - self.rate * (self.k_size - 1) - 1) / self.stride + 1) if \
+                shape[2] is not None else None
+
         return tf.TensorShape(shape)
-
-
-# class Conv2DSame(tf.keras.Model):
-#     def __init__(self,
-#                  filters,
-#                  kernel_size,
-#                  strides=1,
-#                  data_format=None,
-#                  dilation_rate=1,
-#                  activation=None,
-#                  use_bias=True,
-#                  kernel_initializer='glorot_uniform',
-#                  bias_initializer='zeros',
-#                  kernel_regularizer=None,
-#                  bias_regularizer=None,
-#                  activity_regularizer=None,
-#                  kernel_constraint=None,
-#                  bias_constraint=None,
-#                  **kwargs):
-#         super(Conv2DSame, self).__init__()
-#         self.kernel_size = kernel_size
-#         self.dilation_rate = dilation_rate
-#         self.stride = strides
-#         padding = 'valid' if self.stride > 1 else 'same'
-#         self.conv = Conv2D(filters,
-#                            kernel_size,
-#                            strides=strides,
-#                            padding=padding,
-#                            data_format=data_format,
-#                            dilation_rate=dilation_rate,
-#                            activation=activation,
-#                            use_bias=use_bias,
-#                            kernel_initializer=kernel_initializer,
-#                            bias_initializer=bias_initializer,
-#                            kernel_regularizer=kernel_regularizer,
-#                            bias_regularizer=bias_regularizer,
-#                            activity_regularizer=activity_regularizer,
-#                            kernel_constraint=kernel_constraint,
-#                            bias_constraint=bias_constraint,
-#                            **kwargs)
-#
-#     def call(self, inputs, training=None, mask=None):
-#         if self.stride == 1:
-#             return self.conv(inputs)
-#         kernel_size_effective = self.kernel_size + (self.kernel_size - 1) * (self.dilation_rate - 1)
-#         pad_total = kernel_size_effective - 1
-#         pad_beg = pad_total // 2
-#         pad_end = pad_total - pad_beg
-#         inputs = tf.pad(inputs,
-#                         [[0, 0], [pad_beg, pad_end], [pad_beg, pad_end], [0, 0]])
-#
-#         x = self.conv(inputs)
-#
-#         return x
 
 
 class AffineChannel2D(tf.keras.layers.Layer):

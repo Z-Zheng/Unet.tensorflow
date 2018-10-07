@@ -156,11 +156,4 @@ def smooth_l1_loss(prediction_tensor, target_tensor, delta, weights):
         reduction=tf.losses.Reduction.NONE
     ), axis=2)
 
-
 # todo: OHEM
-
-if __name__ == '__main__':
-    tf.enable_eager_execution()
-    labels = tf.constant([1, 0, 0, 0, 0, 1, 0])
-    t = balance_positive_negative_weight(labels, positive_weight=22. / 23., negative_weight=1. / 23.)
-    print(t)

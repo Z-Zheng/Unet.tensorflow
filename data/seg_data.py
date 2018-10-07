@@ -107,11 +107,11 @@ class SegDataset(base.InputPiepline):
         # set shape
         height = inputs['image/height']
         width = inputs['image/width']
+
         im = tf.reshape(im, [height, width, 3])
         mask = tf.reshape(mask, [height, width, 1])
 
         im = tf.cast(im, tf.float32)
         im = im - tf.constant(MEAN, dtype=tf.float32, shape=[1, 1, 3])
         mask = tf.cast(mask, tf.int64)
-
         return im, mask
