@@ -80,7 +80,7 @@ def main():
         pred_class = tf.to_float(pred_prob > score_threshold)
 
         # add summary for prediction results.
-        pred_images = tf.expand_dims(pred_class * 255, axis=-1)
+        pred_images = pred_class * 255
         vis_preds = tf.concat([tf.cast(images, pred_class.dtype), tf.tile(pred_images, multiples=[1, 1, 1, 3])], axis=2)
         vis_preds = tf.cast(vis_preds, tf.uint8)
         tf.summary.image('prediction', vis_preds, max_outputs=10)
