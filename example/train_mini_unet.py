@@ -142,8 +142,4 @@ def main():
 
 
 if __name__ == '__main__':
-    tf.enable_eager_execution()
-    labels = tf.constant([1, 0, 0, 0])
-    t = tf.one_hot(labels, 1)
-    print(t)
-    # main()
+    main()
