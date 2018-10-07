@@ -70,7 +70,7 @@ def build_model_fn(create_model_fn, hpyerparams, loss_fn, metric_fn=None):
             # add l2 weight decay loss
             l2_loss = loss.l2_weight_decay(trainable_var_list, weight_decay, loss_filter_fn=None)
             tf.summary.scalar('loss/l2_regularization_loss', l2_loss)
-            total_loss = tf.losses.get_total_loss()
+            total_loss = main_losses + l2_loss
             tf.summary.scalar('loss/total_loss', total_loss)
 
             grads_and_vars = optimizer.compute_gradients(total_loss, var_list=trainable_var_list)
@@ -82,7 +82,7 @@ def build_model_fn(create_model_fn, hpyerparams, loss_fn, metric_fn=None):
 
             return tf.estimator.EstimatorSpec(
                 mode,
-                loss=tf.losses.get_total_loss(),
+                loss=total_loss,
                 train_op=train_op
             )
         metric_ops = metric_fn(predictions=prediction, labels=labels, params={

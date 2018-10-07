@@ -31,7 +31,7 @@ def main():
     score_threshold = 0.7
     # batch size should be larger than 16 if you use batch normalization
     batch_size = 16
-    use_batch_norm = True
+    use_batch_norm = False
 
     hyper_params = {
         'learning_rate_fn': learning_rate_util.cosine_learning_rate(0.1, num_steps, 0.000001),
@@ -46,8 +46,8 @@ def main():
         flat_logit = tf.reshape(pred_logit, [-1, num_classes])
         onehot_labels = tf.one_hot(labels, num_classes)
 
-        bpn_weights = balance_positive_negative_weight(labels, positive_weight=22. / 23.,
-                                                       negative_weight=1. / 23.)
+        bpn_weights = balance_positive_negative_weight(labels, positive_weight=1. / 23.,
+                                                       negative_weight=22. / 23.)
 
         # ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
         ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
