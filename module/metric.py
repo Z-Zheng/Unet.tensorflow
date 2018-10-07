@@ -7,7 +7,7 @@ from tensorflow.python.ops import confusion_matrix
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variable_scope
-from tensorflow.python.training import distribute as distribute_lib
+from tensorflow.python.training import distribution_strategy_context
 
 
 def metric_variable(shape, dtype, validate_shape=True, name=None):
@@ -54,6 +54,41 @@ def metric_variable(shape, dtype, validate_shape=True, name=None):
         synchronization=variable_scope.VariableSynchronization.ON_READ,
         aggregation=variable_scope.VariableAggregation.SUM,
         name=name)
+
+
+def _aggregate_across_towers(metrics_collections, metric_value_fn, *args):
+    """Aggregate metric value across towers."""
+
+    def fn(distribution, *a):
+        """Call `metric_value_fn` in the correct control flow context."""
+        if hasattr(distribution, '_outer_control_flow_context'):
+            # If there was an outer context captured before this method was called,
+            # then we enter that context to create the metric value op. If the
+            # caputred context is `None`, ops.control_dependencies(None) gives the
+            # desired behavior. Else we use `Enter` and `Exit` to enter and exit the
+            # captured context.
+            # This special handling is needed because sometimes the metric is created
+            # inside a while_loop (and perhaps a TPU rewrite context). But we don't
+            # want the value op to be evaluated every step or on the TPU. So we
+            # create it outside so that it can be evaluated at the end on the host,
+            # once the update ops have been evaluted.
+
+            # pylint: disable=protected-access
+            if distribution._outer_control_flow_context is None:
+                with ops.control_dependencies(None):
+                    metric_value = metric_value_fn(distribution, *a)
+            else:
+                distribution._outer_control_flow_context.Enter()
+                metric_value = metric_value_fn(distribution, *a)
+                distribution._outer_control_flow_context.Exit()
+                # pylint: enable=protected-access
+        else:
+            metric_value = metric_value_fn(distribution, *a)
+        if metrics_collections:
+            ops.add_to_collections(metrics_collections, metric_value)
+        return metric_value
+
+    return distribution_strategy_context.get_tower_context().merge_call(fn, *args)
 
 
 def _streaming_confusion_matrix(labels, predictions, num_classes, weights=None):
@@ -124,6 +159,7 @@ def compute_positive_iou(total_cm, name):
 
     return result
 
+
 def compute_mean_iou(_, total_cm):
     """Compute the mean intersection-over-union via the confusion matrix."""
     sum_over_row = math_ops.to_float(math_ops.reduce_sum(total_cm, 0))
@@ -151,6 +187,7 @@ def compute_mean_iou(_, total_cm):
         math_ops.reduce_sum(iou, name='mean_iou') / num_valid_entries, 0)
     return result
 
+
 def positive_iou(labels,
                  predictions,
                  num_classes,
@@ -170,14 +207,8 @@ def positive_iou(labels,
         total_cm, update_op = _streaming_confusion_matrix(labels, predictions,
                                                           num_classes, weights)
 
-        def positive_iou_v_across_towers(_, v):
-            positive_iou_v = compute_positive_iou(v, 'positive_iou')
-            if metrics_collections:
-                tf.add_to_collections(metrics_collections, positive_iou_v)
-            return positive_iou_v
-
-        positive_iou_v = distribute_lib.get_tower_context().merge_call(
-            positive_iou_v_across_towers, total_cm)
+        positive_iou_v = _aggregate_across_towers(
+            metrics_collections, compute_positive_iou, total_cm)
 
         if updates_collections:
             tf.add_to_collections(updates_collections, update_op)
