@@ -47,9 +47,7 @@ def build_model_fn(create_model_fn, hpyerparams, loss_fn, metric_fn=None):
                 predictions=prediction,
             )
         main_losses = loss_fn(predictions=prediction, labels=labels)
-        metric_ops = metric_fn(predictions=prediction, labels=labels, params={
-            'inputs': features
-        })
+
         if mode == tf.estimator.ModeKeys.TRAIN:
             # get hyper-parameters
             hps = HyperParams(hpyerparams)
@@ -84,6 +82,9 @@ def build_model_fn(create_model_fn, hpyerparams, loss_fn, metric_fn=None):
                 loss=tf.losses.get_total_loss(),
                 train_op=train_op
             )
+        metric_ops = metric_fn(predictions=prediction, labels=labels, params={
+            'inputs': features
+        })
         if mode == tf.estimator.ModeKeys.EVAL:
 
             if metric_fn is None:
