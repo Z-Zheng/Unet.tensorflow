@@ -3,7 +3,7 @@ from module.unet import MiniUnet
 from util import estimator_util
 from data import seg_data
 from util import learning_rate_util
-from module.loss import balance_positive_negative_weight
+from module.loss import balance_positive_negative_weight, dice_loss
 
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
@@ -55,6 +55,7 @@ def main():
     num_classes = 2
     num_steps = 10
     eval_per_steps = 1000
+    score_threshold = 0.7
     # batch size should be larger than 16 if you use batch normalization
     batch_size = 2
     use_batch_norm = True
@@ -75,22 +76,28 @@ def main():
         bpn_weights = balance_positive_negative_weight(labels, positive_weight=22. / 23.,
                                                        negative_weight=1. / 23.)
 
-        ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
+        # ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
+        ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
+        pred_label = tf.argmax(flat_logit, axis=-1)
+        dice_loss_v = dice_loss(pred_label, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
-
+        tf.summary.scalar('loss/dice_loss', dice_loss_v)
         # add metric for training
-        pred_class = tf.argmax(pred_logit, axis=-1)
+        pred_class = tf.to_float(tf.sigmoid(flat_logit) > score_threshold)
+
         miou = tf.metrics.mean_iou(labels, tf.reshape(pred_class, [-1]), num_classes=num_classes)
         miou_v = compute_mean_iou(None, miou[1])
         tf.identity(miou_v, 'train_miou')
         tf.summary.scalar('train/miou', miou_v)
 
-        return tf.losses.softmax_cross_entropy(onehot_labels, flat_logit)
+        return ce_loss + dice_loss_v
 
     def metric_fn(predictions, labels, params=None):
         images = params['inputs']
+        MEAN = [[[[122.7717, 115.9465, 102.9801]]]]
+        images += MEAN
         pred_prob = predictions['prob']
-        pred_class = tf.argmax(pred_prob, axis=-1)
+        pred_class = tf.to_float(pred_prob > score_threshold)
 
         # add summary for prediction results.
         pred_images = tf.expand_dims(pred_class * 255, axis=-1)
@@ -106,7 +113,7 @@ def main():
         }
 
     def create_model():
-        miniunet = MiniUnet(num_classes=num_classes, use_softmax=True, use_batch_norm=use_batch_norm)
+        miniunet = MiniUnet(num_classes=num_classes, use_softmax=False, use_batch_norm=use_batch_norm)
 
         return miniunet
 

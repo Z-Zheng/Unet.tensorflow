@@ -4,6 +4,11 @@ from module import loss
 from util import learning_rate_util
 from functools import partial
 
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 
 def build_estimator(create_model_func,
                     model_dir,
@@ -62,6 +67,8 @@ def build_model_fn(create_model_fn, hpyerparams, loss_fn, metric_fn=None):
             # freeze vars
             trainable_var_list = model.trainable_variables
             trainable_var_list = filter_var_list(trainable_var_list, freeze_prefixes)
+            if len(trainable_var_list) == 0:
+                logger.warning('There is no variable to be trained.')
             # add l2 weight decay loss
             l2_loss = loss.l2_weight_decay(trainable_var_list, weight_decay, loss_filter_fn=None)
             tf.summary.scalar('loss/l2_regularization_loss', l2_loss)
