@@ -63,7 +63,7 @@ def main():
         tf.summary.scalar('train/miou', miou_v)
         # postive iou
         p_iou = positive_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
-        p_iou_v = compute_positive_iou(p_iou[1], 'postive_iou_v')
+        p_iou_v = compute_positive_iou(None, p_iou[1])
         tf.identity(p_iou_v, 'train_piou')
         tf.summary.scalar('train/piou', p_iou_v)
         # add pr curve

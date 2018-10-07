@@ -140,7 +140,7 @@ def _streaming_confusion_matrix(labels, predictions, num_classes, weights=None):
     return total_cm, update_op
 
 
-def compute_positive_iou(total_cm, name):
+def compute_positive_iou(_, total_cm):
     """Compute the mean intersection-over-union via the confusion matrix."""
     sum_over_row = tf.to_float(tf.reduce_sum(total_cm, 0))
     sum_over_col = tf.to_float(tf.reduce_sum(total_cm, 1))
@@ -214,4 +214,3 @@ def positive_iou(labels,
             tf.add_to_collections(updates_collections, update_op)
 
         return positive_iou_v, update_op
-
