@@ -75,7 +75,10 @@ def build_model_fn(create_model_fn, hpyerparams, loss_fn, metric_fn=None):
 
             grads_and_vars = optimizer.compute_gradients(total_loss, var_list=trainable_var_list)
             # todo: support grad operations
-            train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
+            minimize_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
+
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            train_op = tf.group(minimize_op, update_ops)
 
             return tf.estimator.EstimatorSpec(
                 mode,
