@@ -51,7 +51,8 @@ def main():
 
         # ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
         ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
-        pred_class = tf.to_float(tf.sigmoid(flat_logit) > score_threshold)
+        pred_scores = tf.sigmoid(flat_logit)
+        pred_class = tf.to_float(pred_scores > score_threshold)
         dice_loss_v = dice_loss(pred_class, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
         tf.summary.scalar('loss/dice_loss', dice_loss_v)
@@ -67,7 +68,7 @@ def main():
         tf.identity(p_iou_v, 'train_piou')
         tf.summary.scalar('train/piou', p_iou_v)
         # add pr curve
-        pr_curve('train/prc', labels, pred_class, num_thresholds=201)
+        pr_curve('train/prc', tf.cast(labels, tf.bool), pred_scores, num_thresholds=201)
 
         return ce_loss + dice_loss_v
 
@@ -87,7 +88,7 @@ def main():
         labels = tf.reshape(labels, [-1])
         pred_class = tf.reshape(pred_class, [-1])
         miou = tf.metrics.mean_iou(labels, pred_class, num_classes=2)
-        pr_curve('eval/prc', labels, pred_class, num_thresholds=201)
+        pr_curve('eval/prc', tf.cast(labels, tf.bool), pred_prob, num_thresholds=201)
         return {
             'eval/miou': miou
         }
