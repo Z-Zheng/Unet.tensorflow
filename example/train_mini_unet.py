@@ -51,7 +51,7 @@ def main():
 
         # ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
         ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
-        pred_scores = tf.sigmoid(flat_logit)
+        pred_scores = tf.sigmoid(tf.reshape(flat_logit, [-1]))
         pred_class = tf.to_float(pred_scores > score_threshold)
         dice_loss_v = dice_loss(pred_class, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
@@ -78,6 +78,7 @@ def main():
         MEAN = [[[[122.7717, 115.9465, 102.9801]]]]
         images += MEAN
         pred_prob = predictions['prob']
+        pred_prob = tf.reshape(pred_prob, [-1])
         pred_class = tf.to_float(pred_prob > score_threshold)
 
         # add summary for prediction results.
