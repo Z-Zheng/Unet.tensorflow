@@ -214,3 +214,4 @@ def positive_iou(labels,
             tf.add_to_collections(updates_collections, update_op)
 
         return positive_iou_v, update_op
+
