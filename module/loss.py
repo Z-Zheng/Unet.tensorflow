@@ -56,7 +56,7 @@ def _dice_coeff(predictions, labels):
     return ret_v
 
 
-def dice_loss(predictions, labels):
+def dice_loss(predictions, labels, loss_collection=tf.GraphKeys.LOSSES):
     """
 
         Args:
@@ -68,7 +68,9 @@ def dice_loss(predictions, labels):
         """
     tf.assert_rank(predictions, rank=1)
     tf.assert_rank(labels, rank=1)
-    return -1. * _dice_coeff(predictions, labels)
+    _loss = 1. - _dice_coeff(predictions, labels)
+    tf.losses.add_loss(_loss, loss_collection)
+    return _loss
 
 
 def sigmoid_focal_loss(predictions, onehot_labels, alpha=0.25, gamma=2.0):
@@ -154,4 +156,11 @@ def smooth_l1_loss(prediction_tensor, target_tensor, delta, weights):
         reduction=tf.losses.Reduction.NONE
     ), axis=2)
 
+
 # todo: OHEM
+
+if __name__ == '__main__':
+    tf.enable_eager_execution()
+    labels = tf.constant([1, 0, 0, 0, 0, 1, 0])
+    t = balance_positive_negative_weight(labels, positive_weight=22. / 23., negative_weight=1. / 23.)
+    print(t)
