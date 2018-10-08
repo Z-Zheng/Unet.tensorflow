@@ -24,11 +24,11 @@ def main():
     test_record_path = '/home/zf/zz/DATA/mass_roads/test.record'
     model_dir = './log/miniunet/'
 
-    num_gpus = 0
+    num_gpus = 4
     num_classes = 1
     num_steps = 20000
     eval_per_steps = 1000
-    score_threshold = 0.9
+    score_threshold = 0.5
     # batch size should be larger than 16 if you use batch normalization
     batch_size = 16
     use_batch_norm = False
@@ -55,12 +55,12 @@ def main():
         # ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
         ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
         pred_scores = tf.sigmoid(tf.reshape(flat_logit, [-1]))
-        pred_class = tf.to_float(tf.greater_equal(pred_scores, score_threshold))
-        dice_loss_v = dice_loss(pred_class, labels)
+        dice_loss_v = dice_loss(pred_scores, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
         tf.summary.scalar('loss/dice_loss', dice_loss_v)
         # add metric for training
         # mean iou
+        pred_class = tf.to_float(tf.greater_equal(pred_scores, score_threshold))
         miou = tf.metrics.mean_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
         miou_v = compute_mean_iou(None, miou[1])
         tf.identity(miou_v, 'train_miou')
