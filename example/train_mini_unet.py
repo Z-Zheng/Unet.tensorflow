@@ -36,7 +36,8 @@ def main():
     hyper_params = {
         'learning_rate_fn': learning_rate_util.cosine_learning_rate(0.1, num_steps, 0.000001),
         'momentum': 0.9,
-        'freeze_prefixes': []
+        'freeze_prefixes': [],
+        'weight_decay': 5e-5
     }
 
     # 1. define loss and metric

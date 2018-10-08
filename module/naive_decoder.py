@@ -123,7 +123,7 @@ class FlexDecoder(tf.keras.Model):
         feat_list.reverse()
         x_i = feat_list[0]
         out_final = None
-        for i, c_i in enumerate(feat_list):
+        for i, c_i in enumerate(feat_list[:-1]):
             x_i_before = feat_list[i + 1]
 
             p_i = self.upsample2d(x_i)
