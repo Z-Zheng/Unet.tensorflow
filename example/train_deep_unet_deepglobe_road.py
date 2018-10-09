@@ -7,6 +7,7 @@ from module.loss import balance_positive_negative_weight, dice_loss
 from module.metric import positive_iou, compute_mean_iou, compute_positive_iou
 import logging
 from tensorboard.summary import pr_curve
+from data.preprocess import denormalize
 
 logger = logging.getLogger('tensorflow')
 logger.propagate = False
@@ -16,16 +17,19 @@ tf.logging.set_verbosity(tf.logging.INFO)
 def main():
     # todo: use a config system to manage
     # config
-    image_dir = '/home/zf/zz/DATA/deepglobe_road/train_0_1'
-    mask_dir = '/home/zf/zz/DATA/deepglobe_road/train_0_1'
-    record_path = '/home/zf/zz/DATA/deepglobe_road/train.record'
+    # image_dir = '/home/zf/zz/DATA/deepglobe_road/train_0_1'
+    # mask_dir = '/home/zf/zz/DATA/deepglobe_road/train_0_1'
+    # record_path = '/home/zf/zz/DATA/deepglobe_road/train.record'
+
+    image_dir = r'D:\deepglobe\debug_data'
+    mask_dir = r'D:\deepglobe\debug_data'
+    record_path = r'D:\deepglobe\debug_data\train.record'
 
     model_dir = './log/miniunet/'
 
     num_gpus = 1
     num_classes = 1
     num_steps = 20000
-    eval_per_steps = 1000
     score_threshold = 0.5
     # batch size should be larger than 16 if you use batch normalization
     batch_size = 4
@@ -76,7 +80,7 @@ def main():
     def metric_fn(predictions, labels, params=None):
         images = params['inputs']
 
-        images = (images + 1) / 2 * 255
+        images = denormalize(images)
         pred_prob = predictions['prob']
         flat_pred_prob = tf.reshape(pred_prob, [-1])
         pred_class = tf.to_float(tf.greater_equal(pred_prob, score_threshold))

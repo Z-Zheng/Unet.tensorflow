@@ -7,7 +7,7 @@ from module.loss import balance_positive_negative_weight, dice_loss
 from module.metric import positive_iou, compute_mean_iou, compute_positive_iou
 import logging
 from tensorboard.summary import pr_curve
-
+from data.preprocess import denormalize
 logger = logging.getLogger('tensorflow')
 logger.propagate = False
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -77,8 +77,7 @@ def main():
 
     def metric_fn(predictions, labels, params=None):
         images = params['inputs']
-        MEAN = [[[[122.7717, 115.9465, 102.9801]]]]
-        images += MEAN
+        images = denormalize(images)
         pred_prob = predictions['prob']
         flat_pred_prob = tf.reshape(pred_prob, [-1])
         pred_class = tf.to_float(tf.greater_equal(pred_prob, score_threshold))

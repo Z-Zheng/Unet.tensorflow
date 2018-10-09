@@ -95,7 +95,7 @@ class SegDataset(base.InputPiepline):
 
         im = tf.cast(im, tf.float32)
         # im = im - tf.constant(MEAN, dtype=tf.float32, shape=[1, 1, 3])
-        im = im /255.
+        im = 2. / 255. * im - 1
         mask = tf.cast(mask, tf.int64)
         return im, mask
 

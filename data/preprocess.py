@@ -79,4 +79,12 @@ def flip_up_down(image, mask=None):
         ret.append(new_mask)
     return tuple(ret)
 
+
+def normalize(image, radius=1):
+    n_image = 2 * radius / 255. * image - radius
+    return n_image
+
+
+def denormalize(image, radius=1):
+    return (image + radius) * 255. / (2 * radius)
 # todo: random scale

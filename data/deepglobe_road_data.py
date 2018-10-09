@@ -28,8 +28,8 @@ class DeepRoadDataset(base.InputPiepline):
     def get_all_inputs(self):
         im_path_list = glob.glob(os.path.join(self.image_dir, '*_sat.{}'.format(self.image_format)))
         mask_path_list = [os.path.join(self.mask_dir,
-                                       os.path.split(im_path)[-1].replace('*_sat.{}'.format(self.image_format),
-                                                                          '*_mask.{}'.format(self.mask_format))) for
+                                       os.path.split(im_path)[-1].replace('_sat.{}'.format(self.image_format),
+                                                                          '_mask.{}'.format(self.mask_format))) for
                           im_path in im_path_list]
 
         ret_list = []
