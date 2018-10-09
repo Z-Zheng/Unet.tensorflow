@@ -5,34 +5,31 @@ import os
 from data.preprocess import random_crop, random_flip_left_right
 import numpy as np
 
-MEAN = [[[122.7717, 115.9465, 102.9801]]]
 
-
-class SegDataset(base.InputPiepline):
+class DeepRoadDataset(base.InputPiepline):
     def __init__(self,
                  image_dir,
                  mask_dir,
                  record_path,
-                 image_format='jpg',
-                 mask_format='png',
                  crop_size_for_train=(256, 256),
                  rebuild_record=False
                  ):
-        super(SegDataset, self).__init__(record_path, rebuild_record)
+        super(DeepRoadDataset, self).__init__(record_path, rebuild_record)
 
         self.image_dir = image_dir
         self.mask_dir = mask_dir
-        self.image_format = image_format
-        self.mask_format = mask_format
+        self.image_format = 'jpg'
+        self.mask_format = 'png'
 
         self.crop_size_for_train = crop_size_for_train
         self.image_reader = base.ImageReader(image_format=self.image_format, channels=3)
         self.mask_reader = base.ImageReader(image_format=self.mask_format, channels=1)
 
     def get_all_inputs(self):
-        im_path_list = glob.glob(os.path.join(self.image_dir, '*.{}'.format(self.image_format)))
+        im_path_list = glob.glob(os.path.join(self.image_dir, '*_sat.{}'.format(self.image_format)))
         mask_path_list = [os.path.join(self.mask_dir,
-                                       os.path.split(im_path)[-1].replace(self.image_format, self.mask_format)) for
+                                       os.path.split(im_path)[-1].replace('*_sat.{}'.format(self.image_format),
+                                                                          '*_mask.{}'.format(self.mask_format))) for
                           im_path in im_path_list]
 
         ret_list = []
@@ -94,8 +91,8 @@ class SegDataset(base.InputPiepline):
         im, mask = random_flip_left_right(im, mask)
 
         im = tf.cast(im, tf.float32)
-        # im = im - tf.constant(MEAN, dtype=tf.float32, shape=[1, 1, 3])
-        im = im /255.
+        # [0, 255] -> [-1 , 1]
+        im = 2. * im / 255. - 1.
         mask = tf.cast(mask, tf.int64)
         return im, mask
 
@@ -113,6 +110,7 @@ class SegDataset(base.InputPiepline):
         mask = tf.reshape(mask, [height, width, 1])
 
         im = tf.cast(im, tf.float32)
-        im = im - tf.constant(MEAN, dtype=tf.float32, shape=[1, 1, 3])
+        # [0, 255] -> [-1 , 1]
+        im = 2. * im / 255. - 1.
         mask = tf.cast(mask, tf.int64)
         return im, mask

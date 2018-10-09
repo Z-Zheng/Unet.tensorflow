@@ -1,7 +1,7 @@
 import tensorflow as tf
 from module.unet import DeepUnet
 from util import estimator_util
-from data import seg_data
+from data import seg_data,deepglobe_road_data
 from util import learning_rate_util
 from module.loss import balance_positive_negative_weight, dice_loss
 from module.metric import positive_iou, compute_mean_iou, compute_positive_iou
@@ -77,8 +77,8 @@ def main():
 
     def metric_fn(predictions, labels, params=None):
         images = params['inputs']
-        MEAN = [[[[122.7717, 115.9465, 102.9801]]]]
-        images += MEAN
+
+        images = (images + 1) / 2 * 255
         pred_prob = predictions['prob']
         flat_pred_prob = tf.reshape(pred_prob, [-1])
         pred_class = tf.to_float(tf.greater_equal(pred_prob, score_threshold))
