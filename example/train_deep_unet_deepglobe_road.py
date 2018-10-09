@@ -1,7 +1,7 @@
 import tensorflow as tf
 from module.unet import DeepUnet
 from util import estimator_util
-from data import seg_data,deepglobe_road_data
+from data import seg_data, deepglobe_road_data
 from util import learning_rate_util
 from module.loss import balance_positive_negative_weight, dice_loss
 from module.metric import positive_iou, compute_mean_iou, compute_positive_iou
@@ -16,12 +16,10 @@ tf.logging.set_verbosity(tf.logging.INFO)
 def main():
     # todo: use a config system to manage
     # config
-    image_dir = '/home/zf/zz/DATA/mass_roads/train/sat'
-    mask_dir = '/home/zf/zz/DATA/mass_roads/train/map'
-    test_img_dir = '/home/zf/zz/DATA/mass_roads/test1024/sat'
-    test_mask_dir = '/home/zf/zz/DATA/mass_roads/test1024/map'
-    record_path = '/home/zf/zz/DATA/mass_roads/train.record'
-    test_record_path = '/home/zf/zz/DATA/mass_roads/test.record'
+    image_dir = '/home/zf/zz/DATA/deepglobe_road/train_0_1'
+    mask_dir = '/home/zf/zz/DATA/deepglobe_road/train_0_1'
+    record_path = '/home/zf/zz/DATA/deepglobe_road/train.record'
+
     model_dir = './log/miniunet/'
 
     num_gpus = 1
@@ -106,20 +104,13 @@ def main():
         return deepunet
 
     # 2. prepare data
-    train_dataset = seg_data.SegDataset(image_dir=image_dir,
-                                        mask_dir=mask_dir,
-                                        record_path=record_path,
-                                        crop_size_for_train=(512, 512),
-                                        rebuild_record=False)
-
-    test_dataset = seg_data.SegDataset(image_dir=test_img_dir,
-                                       mask_dir=test_mask_dir,
-                                       record_path=test_record_path,
-                                       crop_size_for_train=None,
-                                       rebuild_record=False)
+    train_dataset = deepglobe_road_data.DeepRoadDataset(image_dir=image_dir,
+                                                        mask_dir=mask_dir,
+                                                        record_path=record_path,
+                                                        crop_size_for_train=(512, 512),
+                                                        rebuild_record=False)
 
     train_input_fn = train_dataset.get_input_fn(batch_size=batch_size, epochs=-1, training=True)
-    eval_input_fn = test_dataset.get_input_fn(batch_size=1, epochs=1, training=False)
 
     # 3. prepare model
     estimator = estimator_util.build_estimator(create_model,
@@ -134,9 +125,7 @@ def main():
         every_n_iter=10,
     )
     # 4. go on the fly
-    train_spec = tf.estimator.TrainSpec(train_input_fn, max_steps=num_steps, hooks=[log_hook])
-    eval_spec = tf.estimator.EvalSpec(eval_input_fn, steps=eval_per_steps, start_delay_secs=0, throttle_secs=120)
-    tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+    estimator.train(train_input_fn, max_steps=num_steps, hooks=[log_hook])
 
 
 if __name__ == '__main__':
