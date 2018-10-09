@@ -17,11 +17,18 @@ def build_estimator(create_model_func,
                     metric_fn=None
                     ):
     # issue #22550
-    strategy = distribute.MirroredStrategy(num_gpus=num_gpus)
+    if num_gpus == 0:
+        strategy = distribute.OneDeviceStrategy('device:CPU:0')
+    elif num_gpus == 1:
+        strategy = distribute.OneDeviceStrategy('device:GPU:0')
+    else:
+        strategy = distribute.MirroredStrategy(num_gpus=num_gpus)
+
     session_config = tf.ConfigProto(allow_soft_placement=True)
     session_config.gpu_options.allow_growth = True
 
     config = tf.estimator.RunConfig(train_distribute=strategy,
+                                    eval_distribute=num_gpus,
                                     log_step_count_steps=10,
                                     keep_checkpoint_max=20,
                                     session_config=session_config)

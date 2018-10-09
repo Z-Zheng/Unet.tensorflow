@@ -24,13 +24,13 @@ def main():
     test_record_path = '/home/zf/zz/DATA/mass_roads/test.record'
     model_dir = './log/miniunet/'
 
-    num_gpus = 4
+    num_gpus = 1
     num_classes = 1
     num_steps = 20000
     eval_per_steps = 1000
     score_threshold = 0.5
     # batch size should be larger than 16 if you use batch normalization
-    batch_size = 16
+    batch_size = 4
     use_batch_norm = False
 
     hyper_params = {
@@ -56,23 +56,26 @@ def main():
         ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
         pred_scores = tf.sigmoid(tf.reshape(flat_logit, [-1]))
         dice_loss_v = dice_loss(pred_scores, labels)
-        tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
-        tf.summary.scalar('loss/dice_loss', dice_loss_v)
+        with tf.device('/device:cpu:0'):
+            tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
+            tf.summary.scalar('loss/dice_loss', dice_loss_v)
         # add metric for training
         # mean iou
         pred_class = tf.to_float(tf.greater_equal(pred_scores, score_threshold))
         miou = tf.metrics.mean_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
         miou_v = compute_mean_iou(None, miou[1])
         tf.identity(miou_v, 'train_miou')
-        tf.summary.scalar('train/miou', miou_v)
+        with tf.device('/device:cpu:0'):
+            tf.summary.scalar('train/miou', miou_v)
         # postive iou
         p_iou = positive_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
         p_iou_v = compute_positive_iou(None, p_iou[1])
         tf.identity(p_iou_v, 'train_piou')
-        tf.summary.scalar('train/piou', p_iou_v)
+        with tf.device('/device:cpu:0'):
+            tf.summary.scalar('train/piou', p_iou_v)
         # add pr curve
-
-        pr_curve('train/prc', tf.cast(labels, tf.bool), pred_scores, num_thresholds=201)
+        with tf.device('/device:cpu:0'):
+            pr_curve('train/prc', tf.cast(labels, tf.bool), pred_scores, num_thresholds=201)
 
         return ce_loss + dice_loss_v
 
@@ -107,20 +110,21 @@ def main():
         return deepunet
 
     # 2. prepare data
-    train_dataset = seg_data.SegDataset(image_dir=image_dir,
-                                        mask_dir=mask_dir,
-                                        record_path=record_path,
-                                        crop_size_for_train=(512, 512),
-                                        rebuild_record=False)
+    with tf.device('/device:cpu:0'):
+        train_dataset = seg_data.SegDataset(image_dir=image_dir,
+                                            mask_dir=mask_dir,
+                                            record_path=record_path,
+                                            crop_size_for_train=(512, 512),
+                                            rebuild_record=False)
 
-    test_dataset = seg_data.SegDataset(image_dir=test_img_dir,
-                                       mask_dir=test_mask_dir,
-                                       record_path=test_record_path,
-                                       crop_size_for_train=None,
-                                       rebuild_record=False)
+        test_dataset = seg_data.SegDataset(image_dir=test_img_dir,
+                                           mask_dir=test_mask_dir,
+                                           record_path=test_record_path,
+                                           crop_size_for_train=None,
+                                           rebuild_record=False)
 
-    train_input_fn = train_dataset.get_input_fn(batch_size=batch_size, epochs=-1, training=True)
-    eval_input_fn = test_dataset.get_input_fn(batch_size=1, epochs=1, training=False)
+        train_input_fn = train_dataset.get_input_fn(batch_size=batch_size, epochs=-1, training=True)
+        eval_input_fn = test_dataset.get_input_fn(batch_size=1, epochs=1, training=False)
 
     # 3. prepare model
     estimator = estimator_util.build_estimator(create_model,
