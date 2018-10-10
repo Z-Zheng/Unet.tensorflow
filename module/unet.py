@@ -128,3 +128,9 @@ class DeepUnet(tf.keras.Model):
             })
 
         return ret
+
+
+if __name__ == '__main__':
+    im = tf.ones([1, 512, 512, 3], tf.float32)
+    model = DeepUnet(1, False)
+    o = model(im)

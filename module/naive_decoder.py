@@ -126,7 +126,10 @@ class FlexDecoder(tf.keras.Model):
         for i, c_i in enumerate(feat_list[:-1]):
             x_i_before = feat_list[i + 1]
 
-            p_i = self.upsample2d(x_i)
+            if i != len(feat_list) - 2:
+                p_i = self.upsample2d(x_i)
+            else:
+                p_i = x_i
 
             concat_i = tf.concat([x_i_before, p_i], axis=-1)
             out_i = self.block_list[i](concat_i)
