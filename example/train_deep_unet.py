@@ -8,6 +8,7 @@ from module.metric import positive_iou, compute_mean_iou, compute_positive_iou
 import logging
 from tensorboard.summary import pr_curve
 from data.preprocess import denormalize
+
 logger = logging.getLogger('tensorflow')
 logger.propagate = False
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -36,7 +37,8 @@ def main():
     hyper_params = {
         'learning_rate_fn': learning_rate_util.cosine_learning_rate(0.1, num_steps, 0.000001),
         'momentum': 0.9,
-        'freeze_prefixes': []
+        'freeze_prefixes': [],
+        'weight_decay': 0.0,
     }
 
     # 1. define loss and metric
@@ -49,11 +51,10 @@ def main():
         else:
             onehot_labels = tf.reshape(labels, [-1, 1])
 
-        bpn_weights = balance_positive_negative_weight(labels, positive_weight=1.,
-                                                       negative_weight=1.)
-        bpn_weights = 1e-3 * bpn_weights
-        # ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
-        ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
+        # bpn_weights = balance_positive_negative_weight(labels, positive_weight=1.,
+        #                                                negative_weight=1.)
+        # bpn_weights = 1e-3 * bpn_weights
+        ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=None)
         pred_scores = tf.sigmoid(tf.reshape(flat_logit, [-1]))
         dice_loss_v = dice_loss(pred_scores, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
