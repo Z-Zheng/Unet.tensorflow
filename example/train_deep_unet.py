@@ -1,5 +1,5 @@
 import tensorflow as tf
-from module.unet import DeepUnet,Unet4Block
+from module.unet import DeepUnet,Unet4Block,DebugUnet
 from util import estimator_util
 from data import seg_data
 from util import learning_rate_util
@@ -30,7 +30,7 @@ def main():
     num_classes = 1
     num_steps = 20000
     eval_per_steps = 1000
-    score_threshold = 0.5
+    score_threshold = 0.9
     # batch size should be larger than 16 if you use batch normalization
     batch_size = 4
     use_batch_norm = False
@@ -108,7 +108,7 @@ def main():
         }
 
     def create_model():
-        deepunet = Unet4Block(num_classes=num_classes, use_softmax=False, use_batch_norm=use_batch_norm)
+        deepunet = DebugUnet(num_classes=num_classes, use_softmax=False)
 
         return deepunet
 

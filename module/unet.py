@@ -169,10 +169,12 @@ from tensorflow.keras.layers import Conv2D, Conv2DTranspose, MaxPool2D, Dropout,
 
 class DebugUnet(tf.keras.Model):
     def __init__(self,
-                 num_classes=1):
+                 num_classes=1,
+                 use_softmax=False):
         super(DebugUnet, self).__init__()
+        self.use_softmax = use_softmax
         self.maxpool2d = MaxPool2D(pool_size=(2, 2))
-        self.upsample2d = UpSampling2D(pool_size=(2, 2))
+        self.upsample2d = UpSampling2D(size=(2, 2))
         self.root = tf.keras.Sequential()
         self.root.add(Conv2D(32, 3, 1, 'SAME'))
         self.root.add(ReLU())
@@ -242,12 +244,24 @@ class DebugUnet(tf.keras.Model):
         p6_2 = self.up_to_root_conv2(p6_1)
 
         f = tf.image.resize_bilinear(p6_2, im_shape, align_corners=True)
-        fff = self.pred(f)
-        return fff
+        logit = self.pred(f)
+
+        ret = {
+            'logit': logit
+        }
+        if not training:
+            if self.use_softmax:
+                prob = tf.nn.softmax(logit, axis=-1)
+            else:
+                prob = tf.nn.sigmoid(logit)
+            ret.update({
+                'prob': prob
+            })
+        return ret
 
 
 if __name__ == '__main__':
     im = tf.ones([1, 512, 512, 3], tf.float32)
-    model = Unet4Block(1, False)
+    model = DebugUnet(1, )
     o = model(im)
     print(o)
