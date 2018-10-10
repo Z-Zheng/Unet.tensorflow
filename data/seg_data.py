@@ -3,7 +3,7 @@ from data import base
 import glob
 import os
 from data.preprocess import random_crop, random_flip_left_right, normalize, random_distort_color
-import numpy as np
+
 
 
 class SegDataset(base.InputPiepline):

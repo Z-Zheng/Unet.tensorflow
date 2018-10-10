@@ -47,7 +47,7 @@ def _dice_coeff(predictions, labels):
     Returns:
 
     """
-    _smooth = 1e-8
+    _smooth = 1.0
     predictions = tf.to_float(predictions)
     labels = tf.to_float(labels)
     intersection = tf.reduce_sum(predictions * labels)
