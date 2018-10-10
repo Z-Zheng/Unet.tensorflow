@@ -28,7 +28,7 @@ def build_estimator(create_model_func,
     session_config.gpu_options.allow_growth = True
 
     config = tf.estimator.RunConfig(train_distribute=strategy,
-                                    eval_distribute=num_gpus,
+                                    eval_distribute=strategy,
                                     log_step_count_steps=10,
                                     keep_checkpoint_max=20,
                                     session_config=session_config)
