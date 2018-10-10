@@ -51,11 +51,11 @@ def main():
         else:
             onehot_labels = tf.reshape(labels, [-1, 1])
 
-        bpn_weights = balance_positive_negative_weight(labels, positive_weight=1.,
-                                                       negative_weight=1.)
-        bpn_weights = 1e-3 * bpn_weights
+        # bpn_weights = balance_positive_negative_weight(labels, positive_weight=1.,
+        #                                                negative_weight=1.)
+        # bpn_weights = 1e-3 * bpn_weights
         # ce_loss = tf.losses.softmax_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights)
-        ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
+        ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=1.0)
         pred_scores = tf.sigmoid(tf.reshape(flat_logit, [-1]))
         dice_loss_v = dice_loss(pred_scores, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)

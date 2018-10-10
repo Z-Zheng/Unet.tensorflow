@@ -2,10 +2,8 @@ import tensorflow as tf
 from data import base
 import glob
 import os
-from data.preprocess import random_crop, random_flip_left_right
+from data.preprocess import random_crop, random_flip_left_right, normalize, random_distort_color
 import numpy as np
-
-MEAN = [[[122.7717, 115.9465, 102.9801]]]
 
 
 class SegDataset(base.InputPiepline):
@@ -92,10 +90,8 @@ class SegDataset(base.InputPiepline):
         # data augmentation
         im, mask = random_crop(im, mask, crop_size=self.crop_size_for_train)
         im, mask = random_flip_left_right(im, mask)
-
-        im = tf.cast(im, tf.float32)
-        # im = im - tf.constant(MEAN, dtype=tf.float32, shape=[1, 1, 3])
-        im = 2. / 255. * im - 1
+        im = random_distort_color(im, 0)
+        im = normalize(im)
         mask = tf.cast(mask, tf.int64)
         return im, mask
 
@@ -113,6 +109,6 @@ class SegDataset(base.InputPiepline):
         mask = tf.reshape(mask, [height, width, 1])
 
         im = tf.cast(im, tf.float32)
-        im = im - tf.constant(MEAN, dtype=tf.float32, shape=[1, 1, 3])
+        im = normalize(im)
         mask = tf.cast(mask, tf.int64)
         return im, mask

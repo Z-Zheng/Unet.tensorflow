@@ -87,4 +87,130 @@ def normalize(image, radius=1):
 
 def denormalize(image, radius=1):
     return (image + radius) * 255. / (2 * radius)
-# todo: random scale
+
+
+def random_adjust_saturation(image,
+                             min_delta=0.8,
+                             max_delta=1.25,
+                             seed=None):
+    image = tf.image.random_saturation(image / 255., min_delta, max_delta, seed=seed) * 255.
+    image = tf.clip_by_value(image, clip_value_min=0.0, clip_value_max=255.0)
+    return image
+
+
+def random_adjust_hue(image,
+                      max_delta=0.02,
+                      seed=None):
+    image = tf.image.random_hue(image / 255., max_delta, seed=seed) * 255.
+    image = tf.clip_by_value(image, clip_value_min=0.0, clip_value_max=255.0)
+    return image
+
+
+def random_adjust_contrast(image,
+                           min_delta=0.8,
+                           max_delta=1.25,
+                           seed=None):
+    image = tf.image.random_contrast(image / 255., min_delta, max_delta, seed=seed) * 255.
+    image = tf.clip_by_value(image, clip_value_min=0.0, clip_value_max=255.0)
+    return image
+
+
+def random_adjust_brightness(image,
+                             max_delta=0.2,
+                             seed=None):
+    image = tf.image.random_brightness(image / 255, max_delta, seed=seed) * 255.
+    image = tf.clip_by_value(image, clip_value_min=0.0, clip_value_max=255.0)
+    return image
+
+
+def random_image_scale(image,
+                       masks=None,
+                       min_scale_ratio=0.5,
+                       max_scale_ratio=2.0,
+                       seed=None):
+    """Scales the image size.
+    ref: tensorflow object detection api
+    https://github.com/tensorflow/models/blob/42f98218d7b0ee54077d4e07658442bc7ae0e661/research/object_detection/core/preprocessor.py#L767
+    Args:
+      image: rank 3 float32 tensor contains 1 image -> [height, width, channels].
+      masks: (optional) rank 3 float32 tensor containing masks with
+        size [height, width, num_masks]. The value is set to None if there are no
+        masks.
+      min_scale_ratio: minimum scaling ratio.
+      max_scale_ratio: maximum scaling ratio.
+      seed: random seed.
+      preprocess_vars_cache: PreprocessorCache object that records previously
+                             performed augmentations. Updated in-place. If this
+                             function is called multiple times with the same
+                             non-null cache, it will perform deterministically.
+    Returns:
+      image: image which is the same rank as input image.
+      masks: If masks is not none, resized masks which are the same rank as input
+        masks will be returned.
+    """
+    with tf.name_scope('RandomImageScale', values=[image]):
+        result = []
+        image_shape = tf.shape(image)
+        image_height = image_shape[0]
+        image_width = image_shape[1]
+
+        size_coef = tf.random_uniform([], min_scale_ratio, max_scale_ratio, tf.float32, seed)
+
+        image_newysize = tf.to_int32(
+            tf.multiply(tf.to_float(image_height), size_coef))
+        image_newxsize = tf.to_int32(
+            tf.multiply(tf.to_float(image_width), size_coef))
+        image = tf.image.resize_images(
+            image, [image_newysize, image_newxsize], align_corners=True)
+        result.append(image)
+        if masks is not None:
+            masks = tf.image.resize_images(
+                masks, [image_newysize, image_newxsize],
+                method=tf.image.ResizeMethod.NEAREST_NEIGHBOR,
+                align_corners=True)
+            result.append(masks)
+        return tuple(result)
+
+
+def random_distort_color(image, color_ordering=0):
+    """Randomly distorts color.
+    Randomly distorts color using a combination of brightness, hue, contrast and
+    saturation changes. Makes sure the output image is still between 0 and 255.
+    Args:
+      image: rank 3 float32 tensor contains 1 image -> [height, width, channels]
+             with pixel values varying between [0, 255].
+      color_ordering: Python int, a type of distortion (valid values: 0, 1).
+    Returns:
+      image: image which is the same shape as input image.
+    Raises:
+      ValueError: if color_ordering is not in {0, 1}.
+    """
+    with tf.name_scope('RandomDistortColor', values=[image]):
+        if color_ordering == 0:
+            image = random_adjust_brightness(
+                image, max_delta=32. / 255.)
+            image = random_adjust_saturation(
+                image, min_delta=0.5, max_delta=1.5, )
+            image = random_adjust_hue(
+                image, max_delta=0.2,
+            )
+            image = random_adjust_contrast(
+                image, min_delta=0.5, max_delta=1.5,
+            )
+
+        elif color_ordering == 1:
+            image = random_adjust_brightness(
+                image, max_delta=32. / 255.,
+            )
+            image = random_adjust_contrast(
+                image, min_delta=0.5, max_delta=1.5,
+            )
+            image = random_adjust_saturation(
+                image, min_delta=0.5, max_delta=1.5,
+            )
+            image = random_adjust_hue(
+                image, max_delta=0.2,
+            )
+        else:
+            raise ValueError('color_ordering must be in {0, 1}')
+        return image

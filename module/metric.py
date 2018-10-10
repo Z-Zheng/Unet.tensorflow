@@ -141,7 +141,7 @@ def _streaming_confusion_matrix(labels, predictions, num_classes, weights=None):
 
 
 def compute_positive_iou(_, total_cm):
-    """Compute the mean intersection-over-union via the confusion matrix."""
+    """Compute the positive intersection-over-union via the confusion matrix."""
     sum_over_row = tf.to_float(tf.reduce_sum(total_cm, 0))
     sum_over_col = tf.to_float(tf.reduce_sum(total_cm, 1))
     cm_diag = tf.to_float(tf.diag_part(total_cm))
@@ -156,6 +156,26 @@ def compute_positive_iou(_, total_cm):
 
     # If the number of valid entries is 0 (no classes) we return 0.
     result = iou[1]
+
+    return result
+
+
+def compute_negative_iou(_, total_cm):
+    """Compute the negative intersection-over-union via the confusion matrix."""
+    sum_over_row = tf.to_float(tf.reduce_sum(total_cm, 0))
+    sum_over_col = tf.to_float(tf.reduce_sum(total_cm, 1))
+    cm_diag = tf.to_float(tf.diag_part(total_cm))
+    denominator = sum_over_row + sum_over_col - cm_diag
+
+    # If the value of the denominator is 0, set it to 1 to avoid
+    # zero division.
+    denominator = tf.where(
+        tf.greater(denominator, 0), denominator,
+        tf.ones_like(denominator))
+    iou = tf.div(cm_diag, denominator)
+
+    # If the number of valid entries is 0 (no classes) we return 0.
+    result = iou[0]
 
     return result
 
@@ -214,3 +234,31 @@ def positive_iou(labels,
             tf.add_to_collections(updates_collections, update_op)
 
         return positive_iou_v, update_op
+
+
+def negative_iou(labels,
+                 predictions,
+                 num_classes,
+                 weights=None,
+                 metrics_collections=None,
+                 updates_collections=None,
+                 name=None):
+    if context.executing_eagerly():
+        raise RuntimeError('negative_iou is not supported when '
+                           'eager execution is enabled.')
+
+    with variable_scope.variable_scope(name, 'negative_iou',
+                                       (predictions, labels, weights)):
+        # Check if shape is compatible.
+        predictions.get_shape().assert_is_compatible_with(labels.get_shape())
+
+        total_cm, update_op = _streaming_confusion_matrix(labels, predictions,
+                                                          num_classes, weights)
+
+        negative_iou_v = _aggregate_across_towers(
+            metrics_collections, compute_negative_iou, total_cm)
+
+        if updates_collections:
+            tf.add_to_collections(updates_collections, update_op)
+
+        return negative_iou_v, update_op

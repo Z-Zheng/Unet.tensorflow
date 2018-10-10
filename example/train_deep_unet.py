@@ -5,6 +5,7 @@ from data import seg_data
 from util import learning_rate_util
 from module.loss import balance_positive_negative_weight, dice_loss
 from module.metric import positive_iou, compute_mean_iou, compute_positive_iou
+from module.metric import negative_iou, compute_negative_iou
 import logging
 from tensorboard.summary import pr_curve
 from data.preprocess import denormalize
@@ -71,6 +72,11 @@ def main():
         p_iou_v = compute_positive_iou(None, p_iou[1])
         tf.identity(p_iou_v, 'train_piou')
         tf.summary.scalar('train/piou', p_iou_v)
+        # negative iou
+        n_iou = negative_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
+        n_iou_v = compute_negative_iou(None, n_iou[1])
+        tf.identity(n_iou_v, 'train_niou')
+        tf.summary.scalar('train/niou', p_iou_v)
         # add pr curve
         pr_curve('train/prc', tf.cast(labels, tf.bool), pred_scores, num_thresholds=201)
 
