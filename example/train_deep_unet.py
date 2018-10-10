@@ -1,5 +1,5 @@
 import tensorflow as tf
-from module.unet import DeepUnet
+from module.unet import DeepUnet,Unet4Block
 from util import estimator_util
 from data import seg_data
 from util import learning_rate_util
@@ -108,7 +108,7 @@ def main():
         }
 
     def create_model():
-        deepunet = DeepUnet(num_classes=num_classes, use_softmax=False, use_batch_norm=use_batch_norm)
+        deepunet = Unet4Block(num_classes=num_classes, use_softmax=False, use_batch_norm=use_batch_norm)
 
         return deepunet
 

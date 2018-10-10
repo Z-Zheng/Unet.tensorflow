@@ -130,7 +130,42 @@ class DeepUnet(tf.keras.Model):
         return ret
 
 
+class Unet4Block(tf.keras.Model):
+    def __init__(self,
+                 num_classes,
+                 use_softmax=True,
+                 use_batch_norm=False):
+        super(Unet4Block, self).__init__()
+
+        self.num_classes = num_classes
+        self.use_softmax = use_softmax
+
+        self.encoder = FlexEncoder(block_dims=(64, 128, 256, 512, 1024),
+                                   use_batch_norm=use_batch_norm)
+        self.decoder = FlexDecoder(num_classes=num_classes,
+                                   block_dims=(512, 256, 128, 64),
+                                   use_batch_norm=use_batch_norm)
+
+    def call(self, inputs, training=None, mask=None):
+        encoder_outs = self.encoder(inputs)
+        logit = self.decoder(encoder_outs)
+        ret = {
+            'logit': logit
+        }
+        if not training:
+            if self.use_softmax:
+                prob = tf.nn.softmax(logit, axis=-1)
+            else:
+                prob = tf.nn.sigmoid(logit)
+            ret.update({
+                'prob': prob
+            })
+
+        return ret
+
+
 if __name__ == '__main__':
     im = tf.ones([1, 512, 512, 3], tf.float32)
-    model = DeepUnet(1, False)
+    model = Unet4Block(1, False)
     o = model(im)
+    print(o)
