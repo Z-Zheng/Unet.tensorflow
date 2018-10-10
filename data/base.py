@@ -97,14 +97,17 @@ class ImageReader(object):
         """
         with tf.Graph().as_default():
             self._decode_data = tf.placeholder(dtype=tf.string)
+            self._encode_data = tf.placeholder(dtype=tf.uint8, shape=[None, None, channels])
             self._image_format = image_format
             self._session = tf.Session()
             if self._image_format in ('jpeg', 'jpg'):
                 self._decode = tf.image.decode_jpeg(self._decode_data,
                                                     channels=channels)
+                self._encode = tf.image.encode_jpeg(self._encode_data)
             elif self._image_format == 'png':
                 self._decode = tf.image.decode_png(self._decode_data,
                                                    channels=channels)
+                self._encode = tf.image.encode_png(self._encode_data)
 
     def read_image_dims(self, image_data):
         """Reads the image dimensions.
@@ -132,6 +135,11 @@ class ImageReader(object):
 
         return image
 
+    def encode_image(self, image_data):
+        encoded_image = self._session.run(self._encode,
+                                          feed_dict={self._encode_data: image_data})
+        return encoded_image
+
 
 def int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
@@ -147,6 +155,10 @@ def bytes_feature(value):
 
 def bytes_list_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=value))
+
+
+def float_feature(value):
+    return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
 
 
 def float_list_feature(value):
