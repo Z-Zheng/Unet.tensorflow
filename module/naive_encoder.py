@@ -115,9 +115,11 @@ class FlexEncoder(tf.keras.Model):
 
         feat_list = []
 
-        for block_i in self.block_list:
+        for idx, block_i in enumerate(self.block_list):
             x = block_i(x)
             feat_list.append(x)
+            if idx == 0:
+                continue
             x = self.maxpool2d(x)
 
         return feat_list

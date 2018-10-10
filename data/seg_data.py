@@ -90,6 +90,8 @@ class SegDataset(base.InputPiepline):
         # data augmentation
         im, mask = random_crop(im, mask, crop_size=self.crop_size_for_train)
         im, mask = random_flip_left_right(im, mask)
+
+        im = tf.cast(im, tf.float32)
         im = random_distort_color(im, 0)
         im = normalize(im)
         mask = tf.cast(mask, tf.int64)

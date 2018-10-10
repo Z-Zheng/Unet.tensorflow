@@ -12,7 +12,7 @@ class Conv2DSame(tf.keras.layers.Conv2D):
                  dilation_rate=1,
                  activation=None,
                  use_bias=True,
-                 kernel_initializer=tf.initializers.random_normal(stddev=0.01),
+                 kernel_initializer=tf.initializers.glorot_normal(),
                  bias_initializer='zeros',
                  kernel_regularizer=None,
                  bias_regularizer=None,
