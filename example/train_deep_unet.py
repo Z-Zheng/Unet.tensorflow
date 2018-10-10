@@ -57,7 +57,8 @@ def main():
         # bpn_weights = 1e-3 * bpn_weights
         ce_loss = tf.losses.sigmoid_cross_entropy(onehot_labels, flat_logit, weights=bpn_weights[:, None])
         pred_scores = tf.sigmoid(tf.reshape(flat_logit, [-1]))
-        pred_scores = tf.Print(pred_scores, [pred_scores], message='pred_score = ')
+        # debug
+        # pred_scores = tf.Print(pred_scores, [pred_scores], message='pred_score = ')
         dice_loss_v = dice_loss(pred_scores, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
         tf.summary.scalar('loss/dice_loss', dice_loss_v)
@@ -77,7 +78,7 @@ def main():
         n_iou = negative_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
         n_iou_v = compute_negative_iou(None, n_iou[1])
         tf.identity(n_iou_v, 'train_niou')
-        tf.summary.scalar('train/niou', p_iou_v)
+        tf.summary.scalar('train/niou', n_iou_v)
         # add pr curve
         pr_curve('train/prc', tf.cast(labels, tf.bool), pred_scores, num_thresholds=201)
 
@@ -136,12 +137,12 @@ def main():
                                                metric_fn=metric_fn)
 
     log_hook = tf.train.LoggingTensorHook(
-        tensors=['learning_rate', 'train_miou', 'train_piou'],
+        tensors=['learning_rate', 'train_miou', 'train_piou', 'train_niou'],
         every_n_iter=10,
     )
     # 4. go on the fly
     train_spec = tf.estimator.TrainSpec(train_input_fn, max_steps=num_steps, hooks=[log_hook])
-    eval_spec = tf.estimator.EvalSpec(eval_input_fn, steps=eval_per_steps, start_delay_secs=0, throttle_secs=120)
+    eval_spec = tf.estimator.EvalSpec(eval_input_fn, steps=eval_per_steps, start_delay_secs=0, throttle_secs=30)
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
 
 
