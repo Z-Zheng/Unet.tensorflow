@@ -104,7 +104,6 @@ def main():
 
     def create_model():
         deepunet = DeepUnet(num_classes=num_classes, use_softmax=False, use_batch_norm=use_batch_norm)
-
         return deepunet
 
     # 2. prepare data

@@ -9,7 +9,6 @@ from module.metric import negative_iou, compute_negative_iou
 import logging
 from tensorboard.summary import pr_curve
 from data.preprocess import denormalize
-
 logger = logging.getLogger('tensorflow')
 logger.propagate = False
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -98,8 +97,7 @@ def main():
         labels = tf.reshape(labels, [-1])
         pred_class = tf.reshape(pred_class, [-1])
         miou = tf.metrics.mean_iou(labels, pred_class, num_classes=2)
-        p_iou = positive_iou(labels, tf.reshape(pred_class, [-1]), num_classes=2)
-
+        p_iou = positive_iou(labels, pred_class, num_classes=2)
         pr_curve('eval/prc', tf.cast(labels, tf.bool), flat_pred_prob, num_thresholds=201)
         return {
             'eval/miou': miou,
@@ -143,7 +141,6 @@ def main():
     train_spec = tf.estimator.TrainSpec(train_input_fn, max_steps=num_steps, hooks=[log_hook])
     eval_spec = tf.estimator.EvalSpec(eval_input_fn, steps=eval_per_steps, start_delay_secs=0, throttle_secs=120)
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
-
 
 if __name__ == '__main__':
     main()
