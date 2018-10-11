@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from module.naive_encoder import NaiveEncoder, FlexEncoder
-from module.naive_decoder import NaiveDecoder, FlexDecoder
+from module.naive_decoder import NaiveDecoder, FlexDecoder, UpsampleType
 
 
 class Unet(tf.keras.Model):
@@ -134,6 +134,7 @@ class Unet4Block(tf.keras.Model):
     def __init__(self,
                  num_classes,
                  use_softmax=True,
+                 upsample_method=UpsampleType.Deconv,
                  use_batch_norm=False):
         super(Unet4Block, self).__init__()
 
@@ -144,7 +145,8 @@ class Unet4Block(tf.keras.Model):
                                    use_batch_norm=use_batch_norm)
         self.decoder = FlexDecoder(num_classes=num_classes,
                                    block_dims=(512, 256, 128, 64),
-                                   use_batch_norm=use_batch_norm)
+                                   use_batch_norm=use_batch_norm,
+                                   upsample_mehtod=upsample_method)
 
     def call(self, inputs, training=None, mask=None):
         encoder_outs = self.encoder(inputs)

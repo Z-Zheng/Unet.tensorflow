@@ -98,7 +98,9 @@ class FlexDecoder(tf.keras.Model):
         self.cls_conv_pred = Conv2DSame(num_classes, 1, use_bias=True)
         if upsample_mehtod == UpsampleType.Bilinear:
             self.upsample2d = UpSampling2D(size=(2, 2))
-
+        elif upsample_mehtod == UpsampleType.Deconv:
+            self.upsample2d = [Conv2DTranspose(out_dim, kernel_size=2, strides=2, padding='same') for out_dim in
+                               block_dims]
         else:
             raise ValueError('upsample_method is only support Bilinear mode.')
         self.block_list = []
@@ -126,7 +128,10 @@ class FlexDecoder(tf.keras.Model):
         for i, c_i in enumerate(feat_list[:-1]):
             x_i_before = feat_list[i + 1]
 
-            p_i = self.upsample2d(x_i)
+            if isinstance(self.upsample2d, list):
+                p_i = self.upsample2d[i](x_i)
+            else:
+                p_i = self.upsample2d(x_i)
 
             concat_i = tf.concat([x_i_before, p_i], axis=-1)
             out_i = self.block_list[i](concat_i)
