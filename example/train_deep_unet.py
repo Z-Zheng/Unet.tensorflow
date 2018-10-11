@@ -1,5 +1,5 @@
 import tensorflow as tf
-from module.unet import DeepUnet,Unet4Block
+from module.unet import DeepUnet,Unet4Block,DebugUnet
 from util import estimator_util
 from data import seg_data
 from util import learning_rate_util
@@ -30,7 +30,7 @@ def main():
     num_classes = 1
     num_steps = 20000
     eval_per_steps = 1000
-    score_threshold = 0.5
+    score_threshold = 0.9
     # batch size should be larger than 16 if you use batch normalization
     batch_size = 4
     use_batch_norm = False
@@ -39,7 +39,7 @@ def main():
         'learning_rate_fn': learning_rate_util.cosine_learning_rate(0.1, num_steps, 0.000001),
         'momentum': 0.9,
         'freeze_prefixes': [],
-        'weight_decay': 0.0,
+        'weight_decay': 5e-5,
     }
 
     # 1. define loss and metric
@@ -59,9 +59,9 @@ def main():
         pred_scores = tf.sigmoid(tf.reshape(flat_logit, [-1]))
         # debug
         # pred_scores = tf.Print(pred_scores, [pred_scores], message='pred_score = ')
-        dice_loss_v = dice_loss(pred_scores, labels)
+        # dice_loss_v = dice_loss(pred_scores, labels)
         tf.summary.scalar('loss/cross_entropy_loss', ce_loss)
-        tf.summary.scalar('loss/dice_loss', dice_loss_v)
+        # tf.summary.scalar('loss/dice_loss', dice_loss_v)
         # add metric for training
         # mean iou
         pred_class = tf.to_float(tf.greater_equal(pred_scores, score_threshold))
@@ -82,7 +82,7 @@ def main():
         # add pr curve
         pr_curve('train/prc', tf.cast(labels, tf.bool), pred_scores, num_thresholds=201)
 
-        return ce_loss + dice_loss_v
+        return ce_loss
 
     def metric_fn(predictions, labels, params=None):
         images = params['inputs']
@@ -108,7 +108,7 @@ def main():
         }
 
     def create_model():
-        deepunet = Unet4Block(num_classes=num_classes, use_softmax=False, use_batch_norm=use_batch_norm)
+        deepunet = DebugUnet(num_classes=num_classes, use_softmax=False)
 
         return deepunet
 
